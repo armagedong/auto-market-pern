@@ -46,6 +46,11 @@ const Ad = sequelize.define('Ad', {
     },
     moderator_comment: {
         type: DataTypes.TEXT
+    },
+    photos: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        allowNull: false,
+        defaultValue: []
     }
 });
 
