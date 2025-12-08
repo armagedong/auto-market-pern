@@ -22,7 +22,7 @@ const Register = () => {
             <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded shadow-md w-96">
                 <h2 className="text-2xl mb-4">Register</h2>
                 <input {...register('email')} type="email" placeholder="Email" className="w-full p-2 border mb-2 rounded"/>
-                <input {...register('nickname')} type="text" placeholder="Nickname" className="w-full p-2 border mb-2 rounded"/>
+                <input {...register('username')} type="text" placeholder="Nickname" className="w-full p-2 border mb-2 rounded"/>
                 <input {...register('password')} type="password" placeholder="Password" className="w-full p-2 border mb-4 rounded"/>
                 <button className="w-full bg-blue-600 text-white p-2 rounded">Register</button>
             </form>

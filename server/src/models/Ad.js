@@ -1,60 +1,33 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db');
-const User = require('./User');
+import { DataTypes } from 'sequelize';
+import sequelize from '../db.js';
+import User from './User.js';
+import Photo from './Photo.js';
+import Brand from './Brand.js';
+import Model from './Model.js';
+import Color from './Color.js';
 
 const Ad = sequelize.define('Ad', {
-    title: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    brand: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    model: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    year: {
-        type: DataTypes.INTEGER
-    },
-    price: {
-        type: DataTypes.BIGINT,
-        allowNull: false
-    },
-    mileage: {
-        type: DataTypes.INTEGER
-    },
-    fuel: {
-        type: DataTypes.STRING
-    },
-    gearbox: {
-        type: DataTypes.STRING
-    },
-    color: {
-        type: DataTypes.STRING
-    },
-    description: {
-        type: DataTypes.TEXT
-    },
-    vin: {
-        type: DataTypes.STRING
-    },
-    status: {
-        type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-        defaultValue: 'pending'
-    },
-    moderator_comment: {
-        type: DataTypes.TEXT
-    },
-    photos: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        allowNull: false,
-        defaultValue: []
-    }
+    title: { type: DataTypes.STRING, allowNull: false },
+    year: DataTypes.INTEGER,
+    price: DataTypes.FLOAT,
+    mileage: DataTypes.INTEGER,
+    fuel: DataTypes.STRING,
+    gearbox: DataTypes.STRING,
+    vin: DataTypes.STRING,
+    state: DataTypes.STRING, // битый / не битый
+    ptsNumber: DataTypes.STRING,
+    ptsOwners: DataTypes.INTEGER,
+    registered: DataTypes.BOOLEAN,
+    description: DataTypes.TEXT,
+    address: DataTypes.STRING,
+    contact: DataTypes.STRING,
+    status: { type: DataTypes.STRING, defaultValue: 'pending' } // pending, approved
 });
 
-Ad.belongsTo(User, { foreignKey: 'user_id' });
-User.hasMany(Ad, { foreignKey: 'user_id' });
+Ad.belongsTo(User, { foreignKey: 'userId' });
+Ad.belongsTo(Brand, { foreignKey: 'brandId' });
+Ad.belongsTo(Model, { foreignKey: 'modelId' });
+Ad.belongsTo(Color, { foreignKey: 'colorId' });
+Ad.hasMany(Photo, { foreignKey: 'adId' });
 
-module.exports = Ad;
+export default Ad;

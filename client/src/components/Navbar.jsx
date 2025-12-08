@@ -8,7 +8,7 @@ const Navbar = ({ user, logout }) => (
             {user ? (
                 <>
                     <Link to="/create" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">+ Добавить авто</Link>
-                    <span className="text-gray-700">Привет, {user.nickname}</span>
+                    <span className="text-gray-700">Привет, {user.username}</span>
                     <button onClick={logout} className="text-red-500 hover:text-red-600">Выйти</button>
                 </>
             ) : (

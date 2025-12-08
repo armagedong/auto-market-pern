@@ -1,25 +1,27 @@
-const app = require('./app');
-const sequelize = require('./db');
+import app from './app.js';
+import sequelize from './db.js';
+import dotenv from 'dotenv';
 
-const User = require('./models/User');
-const Ad = require('./models/Ad');
-const Photo = require('./models/Photo');
+import './models/User.js';
+import './models/Ad.js';
+import './models/Photo.js';
+import './models/Brand.js';
 
-require('dotenv').config();
+dotenv.config();
 
-(async () => {
+const startServer = async () => {
     try {
         await sequelize.authenticate();
-        console.log('База данных подюченна');
+        console.log('База данных подключена');
 
         await sequelize.sync({ alter: true });
         console.log('Таблицы синхронизированы');
 
-        app.listen(process.env.PORT, () => {
-            console.log(`Сервер запущен: http://localhost:${process.env.PORT}`);
-        });
-
+        const PORT = process.env.PORT || 4000;
+        app.listen(PORT, () => console.log(`Сервер запущен: http://localhost:${PORT}`));
     } catch (err) {
-        console.error('Ошибка подключения', err);
+        console.error('Ошибка подключения:', err);
     }
-})();
+};
+
+startServer();

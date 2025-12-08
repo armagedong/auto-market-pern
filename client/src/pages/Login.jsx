@@ -1,35 +1,53 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import API, { setAuthToken } from '../api/api';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import axios from 'axios';
 
-const Login = ({ setUser }) => {
-    const { register, handleSubmit } = useForm();
-    const navigate = useNavigate();
+export default function Login({ setUser }) {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
-    const onSubmit = async (data) => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         try {
-            const res = await API.post('/auth/login', data);
-            const token = res.data.token;
-            setAuthToken(token);
-            localStorage.setItem('token', token);
+            const res = await axios.post('http://localhost:4000/api/auth/login', { email, password });
+            localStorage.setItem('token', res.data.token);
             setUser(res.data.user);
-            navigate('/');
+            alert('Вы успешно вошли!');
         } catch (err) {
-            alert(err.response?.data?.error || 'Error');
+            console.error(err);
+            alert('Ошибка входа');
         }
     };
 
     return (
-        <div className="flex justify-center items-center h-screen bg-gray-100">
-            <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded shadow-md w-96">
-                <h2 className="text-2xl mb-4">Login</h2>
-                <input {...register('email')} type="email" placeholder="Email" className="w-full p-2 border mb-2 rounded"/>
-                <input {...register('password')} type="password" placeholder="Password" className="w-full p-2 border mb-4 rounded"/>
-                <button className="w-full bg-blue-600 text-white p-2 rounded">Login</button>
+        <div className="flex justify-center items-center h-screen bg-gray-900">
+            <form
+                className="bg-gray-800 p-10 rounded-xl w-96 shadow-lg"
+                onSubmit={handleSubmit}
+            >
+                <h1 className="text-2xl font-bold text-white mb-6">Вход</h1>
+                <input
+                    type="email"
+                    placeholder="Email"
+                    className="w-full p-3 rounded mb-4 bg-gray-700 text-white"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                />
+                <input
+                    type="password"
+                    placeholder="Пароль"
+                    className="w-full p-3 rounded mb-6 bg-gray-700 text-white"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                />
+                <button
+                    type="submit"
+                    className="w-full p-3 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold"
+                >
+                    Войти
+                </button>
             </form>
         </div>
     );
-};
-
-export default Login;
+}
