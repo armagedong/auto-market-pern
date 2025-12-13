@@ -4,6 +4,12 @@ import path from 'path';
 import auth from '../middleware/authMiddleware.js';
 // Импортируем наш Фасад
 import AdService from '../services/AdService.js';
+import Ad from '../models/Ad.js';
+import User from '../models/User.js';
+import Photo from '../models/Photo.js';
+import Brand from '../models/Brand.js';
+import Model from '../models/Model.js';
+import Color from '../models/Color.js';
 
 const router = express.Router();
 
@@ -54,6 +60,30 @@ router.get('/', async (req, res) => {
         res.json(ads);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/:id', async (req, res) => {
+    try {
+        const ad = await Ad.findByPk(req.params.id, {
+            include: [
+                // Обязательно включаем связанные модели для AdDetails.jsx
+                { model: User, attributes: ['id', 'username', 'email'] },
+                { model: Photo, as: 'Photos' }, // Используйте 'Photos', если так настроена ассоциация
+                { model: Brand, as: 'Brand' },
+                { model: Model, as: 'Model' },
+                { model: Color, as: 'Color' }
+            ]
+        });
+
+        if (!ad) {
+            return res.status(404).json({ error: 'Объявление не найдено' });
+        }
+
+        res.json(ad);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка сервера при получении объявления' });
     }
 });
 

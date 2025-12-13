@@ -6,6 +6,7 @@ import CreateAd from './pages/CreateAd.jsx';
 import Feed from './pages/Feed.jsx';
 import { setAuthToken } from './api/api.js';
 import Register from "./pages/Register.jsx";
+import AdDetails from './pages/AdDetails.jsx';
 
 function App() {
     const [user, setUser] = useState(null);
@@ -31,7 +32,8 @@ function App() {
                 {/* <Route path="/register" element={<Register setUser={setUser} />} /> <-- УДАЛЕНО: Register не принимает setUser */}
                 <Route path="/register" element={<Register />} />
                 <Route path="/create" element={<CreateAd user={user} />} />
-                {/* Здесь можно добавить роуты для просмотра одного объявления, админ-панели и т.д. */}
+                <Route path="/ad/:id" element={<AdDetails />} />
+
             </Routes>
         </Router>
     );

@@ -1,3 +1,12 @@
+/* client/src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Установим bg-gray-900 для темного фона и text-gray-100 для светлого текста.
+   Этот стиль переопределит дефолтный bg-gray-100 из index.html.
+*/
+body {
+    @apply bg-gray-900 text-gray-100;
+    min-height: 100vh; /* Гарантируем, что фон занимает всю высоту */
+}
