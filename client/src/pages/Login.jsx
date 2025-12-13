@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import API, { setAuthToken } from '../api/api';
+import { useNavigate } from 'react-router-dom'; // <-- Добавлен импорт
 
 export default function Login({ setUser }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate(); // <-- Инициализация хука
 
+    /**
+     * @summary Обрабатывает отправку формы входа.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:4000/api/auth/login', { email, password });
+            const res = await API.post('/auth/login', { email, password });
+
+            // Сохраняем и устанавливаем токен
             localStorage.setItem('token', res.data.token);
+            setAuthToken(res.data.token);
+
             setUser(res.data.user);
             alert('Вы успешно вошли!');
+
+            // <-- САМЫЙ ВАЖНЫЙ КОД: Перенаправление на главную страницу
+            navigate('/');
+
         } catch (err) {
             console.error(err);
-            alert('Ошибка входа');
+            alert(err.response?.data?.error || 'Ошибка входа');
         }
     };
 

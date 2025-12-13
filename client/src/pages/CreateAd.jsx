@@ -1,100 +1,121 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 
 export default function CreateAd({ user }) {
     const navigate = useNavigate();
-
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
-    const [colors, setColors] = useState([
-        'Красный', 'Синий', 'Черный', 'Белый', 'Серый', 'Зеленый'
-    ]);
-    const [form, setForm] = useState({
-        brand_id: '',
-        model_id: '',
-        color: '',
-        vin: '',
-        govNumber: '',
-        ptcNumber: '',
-        ptcSeries: '',
-        owners: 1,
-        mileage: '',
-        condition: 'good',
-        price: '',
-        address: '',
-        contacts: '',
-        options: [],
-        description: '',
-        photos: []
+    const [colors, setColors] = useState([]); // <-- Теперь цвета загружаются
+    const [selectedBrandId, setSelectedBrandId] = useState('');
+
+    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+        defaultValues: {
+            title: '',
+            brandId: '',
+            modelId: '',
+            colorId: '', // Используем colorId
+            year: new Date().getFullYear(),
+            mileage: 0,
+            price: 0,
+            fuel: 'Бензин',
+            gearbox: 'Автомат',
+            vin: '',
+            state: 'good',
+            ptsNumber: '',
+            ptsSeries: '',
+            ptsOwners: 1,
+            registered: 'false',
+            description: '',
+            address: '',
+            contact: '',
+            options: [],
+            photos: [],
+        }
     });
 
+    const photosWatch = watch('photos');
+
     useEffect(() => {
-        if (!user) {
+        const token = localStorage.getItem('token');
+        if (!user && !token) {
             alert('Вы должны войти в систему');
             navigate('/login');
-            return;
         }
-        fetchBrands();
-    }, [user]);
 
+        fetchBrands();
+        fetchColors(); // <-- Вызываем загрузку цветов
+    }, [user, navigate]);
+
+    /**
+     * @summary Загружает список брендов.
+     */
     const fetchBrands = async () => {
-        const res = await axios.get('http://localhost:4000/api/brands');
-        setBrands(res.data);
+        try {
+            const res = await axios.get('http://localhost:4000/api/brands');
+            setBrands(res.data);
+        } catch (err) {
+            console.error('Ошибка загрузки брендов:', err);
+        }
     };
 
-    const fetchModels = async (brand_id) => {
-        const res = await axios.get(`http://localhost:4000/api/models?brand_id=${brand_id}`);
-        setModels(res.data);
+    /**
+     * @summary Загружает список цветов.
+     */
+    const fetchColors = async () => {
+        try {
+            // Предполагаем, что у вас есть роут /api/colors, который возвращает все цвета
+            const res = await axios.get('http://localhost:4000/api/colors');
+            setColors(res.data);
+        } catch (err) {
+            console.error('Ошибка загрузки цветов:', err);
+        }
+    };
+
+    /**
+     * @summary Загружает список моделей для выбранного бренда.
+     */
+    const fetchModels = async (brandId) => {
+        try {
+            const res = await axios.get(`http://localhost:4000/api/models?brand_id=${brandId}`);
+            setModels(res.data);
+        } catch (err) {
+            console.error('Ошибка загрузки моделей:', err);
+        }
     };
 
     const handleBrandChange = (e) => {
-        const brand_id = e.target.value;
-        setForm({ ...form, brand_id, model_id: '' });
-        fetchModels(brand_id);
-    };
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        if (type === 'checkbox') {
-            setForm((prev) => {
-                const newOptions = checked
-                    ? [...prev.options, value]
-                    : prev.options.filter((opt) => opt !== value);
-                return { ...prev, options: newOptions };
-            });
-        } else if (name === 'photos') {
-            setForm({ ...form, photos: Array.from(e.target.files) });
-        } else {
-            setForm({ ...form, [name]: value });
+        const brandId = e.target.value;
+        setSelectedBrandId(brandId);
+        setValue('brandId', brandId);
+        setValue('modelId', '');
+        setModels([]);
+        if (brandId) {
+            fetchModels(brandId);
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!user) {
-            alert('Вы должны войти в систему');
-            return;
-        }
-
+    const onSubmit = async (data) => {
         try {
-            const data = new FormData();
-            Object.keys(form).forEach((key) => {
-                if (key === 'photos') {
-                    form.photos.forEach((file) => data.append('photos', file));
-                } else if (key === 'options') {
-                    form.options.forEach((opt) => data.append('options', opt));
-                } else {
-                    data.append(key, form[key]);
+            const formData = new FormData();
+
+            Object.keys(data).forEach((key) => {
+                if (key === 'photos' && data.photos.length > 0) {
+                    Array.from(data.photos).forEach((file) => formData.append('photos', file));
+                } else if (key === 'options' && data.options.length > 0) {
+                    data.options.forEach((opt) => formData.append('options', opt));
+                } else if (key !== 'photos' && key !== 'options') {
+                    formData.append(key, data[key]);
                 }
             });
 
             const token = localStorage.getItem('token');
 
-            await axios.post('http://localhost:4000/api/ads', data, {
+            await axios.post('http://localhost:4000/api/ads', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`   // <- добавили токен
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -102,101 +123,208 @@ export default function CreateAd({ user }) {
             navigate('/');
         } catch (err) {
             console.error(err);
-            alert('Ошибка при создании объявления');
+            const errorMsg = err.response?.data?.error || 'Неизвестная ошибка';
+            alert(`Ошибка при создании объявления: ${errorMsg}`);
         }
     };
-
 
     return (
         <div className="p-10 max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold mb-6 text-white">Создать объявление</h1>
-            <form className="bg-gray-800 p-8 rounded-xl" onSubmit={handleSubmit}>
+            <form className="bg-gray-800 p-8 rounded-xl" onSubmit={handleSubmit(onSubmit)}>
+
+                <h2 className="text-xl font-semibold text-white mb-4">Основные данные</h2>
+
+                <div className="mb-4">
+                    <input
+                        type="text"
+                        {...register("title", { required: "Заголовок обязателен" })}
+                        placeholder="Название объявления (например: Hyundai Solaris, 2020)"
+                        className="w-full p-3 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500"
+                    />
+                    {errors.title && <p className="text-red-400 text-sm mt-1">{errors.title.message}</p>}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4 mb-4">
+                    {/* Бренды */}
                     <select
-                        name="brand_id"
-                        value={form.brand_id}
+                        {...register("brandId", { required: "Выберите бренд" })}
                         onChange={handleBrandChange}
                         className="p-3 rounded bg-gray-700 text-white"
-                        required
                     >
                         <option value="">Выберите бренд</option>
-                        {brands.map((b) => (
+                        {brands.length > 0 ? brands.map((b) => (
                             <option key={b.id} value={b.id}>{b.name}</option>
-                        ))}
+                        )) : <option value="">Нет брендов (база пуста)</option>}
                     </select>
+                    {errors.brandId && <p className="text-red-400 text-sm">{errors.brandId.message}</p>}
 
+                    {/* Модели */}
                     <select
-                        name="model_id"
-                        value={form.model_id}
-                        onChange={handleChange}
+                        {...register("modelId", { required: "Выберите модель" })}
                         className="p-3 rounded bg-gray-700 text-white"
-                        required
+                        disabled={!selectedBrandId}
                     >
                         <option value="">Выберите модель</option>
                         {models.map((m) => (
                             <option key={m.id} value={m.id}>{m.name}</option>
                         ))}
                     </select>
+                    {errors.modelId && <p className="text-red-400 text-sm">{errors.modelId.message}</p>}
 
+                    {/* Цвета (Динамическая загрузка) */}
                     <select
-                        name="color"
-                        value={form.color}
-                        onChange={handleChange}
+                        {...register("colorId", { required: "Выберите цвет" })}
                         className="p-3 rounded bg-gray-700 text-white"
-                        required
                     >
                         <option value="">Выберите цвет</option>
-                        {colors.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                        ))}
+                        {colors.length > 0 ? colors.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option> // <-- Используем реальные ID из БД
+                        )) : <option value="">Нет цветов (запустите seed.js)</option>}
                     </select>
+                    {errors.colorId && <p className="text-red-400 text-sm">{errors.colorId.message}</p>}
+
+                    {/* VIN */}
+                    <input
+                        type="text"
+                        {...register("vin", {
+                            required: "VIN обязателен",
+                            pattern: {
+                                value: /^[A-HJ-NPR-Z0-9]{17}$/i,
+                                message: "Неверный формат VIN (17 символов)"
+                            }
+                        })}
+                        placeholder="VIN номер (17 символов)"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
+                    {errors.vin && <p className="text-red-400 text-sm">{errors.vin.message}</p>}
+                </div>
+
+                <h2 className="text-xl font-semibold text-white mb-4">Документы и владение</h2>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <input
+                        type="text"
+                        {...register("ptsNumber", { required: "Номер ПТС обязателен" })}
+                        placeholder="ПТС номер"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
 
                     <input
                         type="text"
-                        name="vin"
-                        value={form.vin}
-                        onChange={handleChange}
-                        placeholder="VIN номер"
+                        {...register("ptsSeries")}
+                        placeholder="ПТС серия (необязательно)"
                         className="p-3 rounded bg-gray-700 text-white"
-                        required
                     />
+
+                    <input
+                        type="number"
+                        {...register("ptsOwners", { required: "Кол-во владельцев обязательно", min: 1 })}
+                        placeholder="Владельцев по ПТС"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
+
+                    <div className="col-span-2">
+                        <label className="inline-flex items-center text-white">
+                            <input
+                                type="checkbox"
+                                {...register("registered")}
+                                value="true"
+                                className="mr-2"
+                            />
+                            Автомобиль состоит на учете (с гос. номером)
+                        </label>
+                    </div>
                 </div>
 
+                <h2 className="text-xl font-semibold text-white mb-4">Эксплуатация</h2>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input type="text" name="govNumber" value={form.govNumber} onChange={handleChange} placeholder="Гос. номер" className="p-3 rounded bg-gray-700 text-white"/>
-                    <input type="text" name="ptcNumber" value={form.ptcNumber} onChange={handleChange} placeholder="ПТС номер" className="p-3 rounded bg-gray-700 text-white"/>
-                    <input type="text" name="ptcSeries" value={form.ptcSeries} onChange={handleChange} placeholder="ПТС серия" className="p-3 rounded bg-gray-700 text-white"/>
-                    <input type="number" name="owners" value={form.owners} onChange={handleChange} placeholder="Владельцев по ПТС" className="p-3 rounded bg-gray-700 text-white"/>
-                </div>
+                    <input
+                        type="number"
+                        {...register("mileage", { required: "Пробег обязателен", min: 0 })}
+                        placeholder="Пробег км"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input type="number" name="mileage" value={form.mileage} onChange={handleChange} placeholder="Пробег км" className="p-3 rounded bg-gray-700 text-white"/>
-                    <select name="condition" value={form.condition} onChange={handleChange} className="p-3 rounded bg-gray-700 text-white">
+                    <select
+                        {...register("state", { required: true })}
+                        className="p-3 rounded bg-gray-700 text-white"
+                    >
                         <option value="good">Не битый</option>
                         <option value="bad">Битый</option>
                     </select>
-                    <input type="number" name="price" value={form.price} onChange={handleChange} placeholder="Цена ₽" className="p-3 rounded bg-gray-700 text-white"/>
-                    <input type="text" name="address" value={form.address} onChange={handleChange} placeholder="Адрес" className="p-3 rounded bg-gray-700 text-white"/>
+
+                    <input
+                        type="number"
+                        {...register("price", { required: "Цена обязательна", min: 1000 })}
+                        placeholder="Цена ₽"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
+
+                    <input
+                        type="number"
+                        {...register("year", { required: "Год обязателен", min: 1900, max: new Date().getFullYear() + 1 })}
+                        placeholder="Год выпуска"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
                 </div>
 
                 <div className="mb-4">
                     <label className="block text-white mb-2">Дополнительные опции</label>
-                    {['ЭУР', 'Климат-контроль', 'Подогрев', 'Кодер'].map((opt) => (
+                    {['ЭУР', 'Климат-контроль', 'Подогрев', 'Кожаный салон', 'Навигация'].map((opt) => (
                         <label key={opt} className="inline-flex items-center mr-4 text-white">
-                            <input type="checkbox" name="options" value={opt} onChange={handleChange} className="mr-1"/>
+                            <input
+                                type="checkbox"
+                                {...register("options")}
+                                value={opt}
+                                className="mr-1"
+                            />
                             {opt}
                         </label>
                     ))}
                 </div>
 
                 <div className="mb-4">
-                    <label className="block text-white mb-2">Описание</label>
-                    <textarea name="description" value={form.description} onChange={handleChange} rows="4" className="w-full p-3 rounded bg-gray-700 text-white"></textarea>
+                    <label className="block text-white mb-2">Фотографии (до 10)</label>
+                    <input
+                        type="file"
+                        {...register("photos", {
+                            validate: {
+                                maxFiles: files => files.length <= 10 || "Максимум 10 файлов"
+                            }
+                        })}
+                        multiple
+                        accept="image/*"
+                        className="text-white"
+                    />
+                    <p className="text-gray-400 text-sm mt-1">
+                        Выбрано файлов: {photosWatch ? photosWatch.length : 0}
+                    </p>
                 </div>
 
+                <h2 className="text-xl font-semibold text-white mb-4">Описание и контакты</h2>
                 <div className="mb-4">
-                    <label className="block text-white mb-2">Фотографии (до 10)</label>
-                    <input type="file" name="photos" multiple accept="image/*" onChange={handleChange} className="text-white"/>
+                    <label className="block text-white mb-2">Описание</label>
+                    <textarea
+                        {...register("description", { required: "Описание обязательно" })}
+                        rows="4"
+                        className="w-full p-3 rounded bg-gray-700 text-white"
+                    ></textarea>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <input
+                        type="text"
+                        {...register("address", { required: "Адрес обязателен" })}
+                        placeholder="Адрес осмотра"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
+
+                    <input
+                        type="text"
+                        {...register("contact", { required: "Контактный телефон/имя обязательно" })}
+                        placeholder="Контакт"
+                        className="p-3 rounded bg-gray-700 text-white"
+                    />
                 </div>
 
                 <button type="submit" className="w-full p-3 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold">

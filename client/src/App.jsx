@@ -26,9 +26,12 @@ function App() {
             <Navbar user={user} logout={logout} />
             <Routes>
                 <Route path="/" element={<Feed />} />
-                <Route path="/feed" element={<Register />} />
+                {/* <Route path="/feed" element={<Register />} /> <-- УДАЛЕНО: Дубликат и ошибка */}
                 <Route path="/login" element={<Login setUser={setUser} />} />
+                {/* <Route path="/register" element={<Register setUser={setUser} />} /> <-- УДАЛЕНО: Register не принимает setUser */}
+                <Route path="/register" element={<Register />} />
                 <Route path="/create" element={<CreateAd user={user} />} />
+                {/* Здесь можно добавить роуты для просмотра одного объявления, админ-панели и т.д. */}
             </Routes>
         </Router>
     );
