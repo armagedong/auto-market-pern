@@ -7,6 +7,8 @@ import Feed from './pages/Feed.jsx';
 import { setAuthToken } from './api/api.js';
 import Register from "./pages/Register.jsx";
 import AdDetails from './pages/AdDetails.jsx';
+import Profile from './pages/Profile.jsx';
+
 
 function App() {
     const [user, setUser] = useState(null);
@@ -26,14 +28,12 @@ function App() {
         <Router>
             <Navbar user={user} logout={logout} />
             <Routes>
-                <Route path="/" element={<Feed />} />
-                {/* <Route path="/feed" element={<Register />} /> <-- УДАЛЕНО: Дубликат и ошибка */}
+                <Route path="/" element={<Feed user={user} />} />
                 <Route path="/login" element={<Login setUser={setUser} />} />
-                {/* <Route path="/register" element={<Register setUser={setUser} />} /> <-- УДАЛЕНО: Register не принимает setUser */}
-                <Route path="/register" element={<Register />} />
+                <Route path="/register" element={<Register setUser={setUser} />} />
                 <Route path="/create" element={<CreateAd user={user} />} />
                 <Route path="/ad/:id" element={<AdDetails />} />
-
+                <Route path="/profile" element={<Profile user={user} />} />
             </Routes>
         </Router>
     );

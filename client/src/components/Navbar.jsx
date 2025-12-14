@@ -10,7 +10,7 @@ const Navbar = ({ user, logout }) => {
     };
 
     return (
-        <nav className="bg-gray-800 shadow-xl sticky top-0 z-50">
+        <nav className="bg-gray-800 shadow-xl sticky top-0 z-50 border-b border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Логотип */}
@@ -22,9 +22,23 @@ const Navbar = ({ user, logout }) => {
 
                     {/* Навигация */}
                     <div className="flex items-center space-x-4">
+                        <Link
+                            to="/"
+                            className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition duration-150"
+                        >
+                            Главная
+                        </Link>
 
                         {user ? (
                             <>
+                                {/* Ссылка на Профиль */}
+                                <Link
+                                    to="/profile"
+                                    className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition duration-150"
+                                >
+                                    Профиль
+                                </Link>
+
                                 {/* Кнопка "Создать объявление" - выделяем её */}
                                 <Link
                                     to="/create"
@@ -33,10 +47,7 @@ const Navbar = ({ user, logout }) => {
                                     + Объявление
                                 </Link>
 
-                                {/* Профиль и Выход */}
-                                <span className="text-gray-400 text-sm hidden md:inline">
-                                    {user.username}
-                                </span>
+                                {/* Кнопка Выход */}
                                 <button
                                     onClick={handleLogout}
                                     className="text-red-400 hover:text-red-300 px-3 py-2 text-sm font-medium transition duration-150"
