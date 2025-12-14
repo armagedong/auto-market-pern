@@ -1,12 +1,116 @@
 /* client/src/index.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Установим bg-gray-900 для темного фона и text-gray-100 для светлого текста.
-   Этот стиль переопределит дефолтный bg-gray-100 из index.html.
-*/
+/* -------------------------------------- */
+/* 1. БАЗОВАЯ ТИПОГРАФИКА И ЦВЕТА (Шрифты: Inter, Montserrat) */
+/* -------------------------------------- */
 body {
+    /* Основной шрифт для всего текста */
+    font-family: 'Inter', sans-serif;
     @apply bg-gray-900 text-gray-100;
-    min-height: 100vh; /* Гарантируем, что фон занимает всю высоту */
+    min-height: 100vh;
+}
+
+/* Применяем агрессивный шрифт Montserrat к заголовкам и жирным элементам */
+h1, h2, h3, h4, .font-extrabold, .font-bold {
+    font-family: 'Montserrat', sans-serif;
+}
+
+
+/* -------------------------------------- */
+/* 2. СТИЛИЗАЦИЯ СКРОЛЛБАРА (для custom-scrollbar) */
+/* -------------------------------------- */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #1f2937; /* bg-gray-800 */
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #3b82f6; /* bg-blue-500 */
+    border-radius: 10px;
+    border: 2px solid #1f2937;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #60a5fa; /* bg-blue-400 */
+}
+
+.custom-scrollbar {
+    /* Для Firefox */
+    scrollbar-color: #3b82f6 #1f2937;
+    scrollbar-width: thin;
+}
+
+/* -------------------------------------- */
+/* 3. КАСТОМНЫЕ СТИЛИ ДЛЯ INPUT TYPE="RADIO" И "CHECKBOX" */
+/* -------------------------------------- */
+
+/* Стилизация радиокнопок */
+input[type="radio"]:checked:after {
+    background-color: #3b82f6; /* Синяя внутренняя точка */
+}
+input[type="radio"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #4b5563; /* border-gray-600 */
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    background-color: #374151; /* bg-gray-700 */
+    transition: all 0.2s;
+}
+input[type="radio"]:checked {
+    border-color: #3b82f6; /* border-blue-500 */
+}
+input[type="radio"]:checked:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Стилизация чекбоксов */
+input[type="checkbox"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #4b5563;
+    border-radius: 0.25rem;
+    margin-right: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    background-color: #374151;
+    transition: all 0.2s;
+}
+input[type="checkbox"]:checked {
+    background-color: #3b82f6; /* bg-blue-500 */
+    border-color: #3b82f6;
+}
+input[type="checkbox"]:checked:after {
+    /* Кастомная галочка (checkmark) */
+    content: '\2713';
+    font-size: 0.75rem;
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }

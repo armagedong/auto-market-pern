@@ -1,7 +1,5 @@
 // client/src/pages/Profile.jsx
-
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import AdCard from '../components/AdCard';
 import API from '../api/api'; // Клиент API
 import { useNavigate } from 'react-router-dom';

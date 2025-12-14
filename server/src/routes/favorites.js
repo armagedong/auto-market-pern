@@ -1,10 +1,8 @@
 // server/src/routes/favorites.js
-
 import { Router } from 'express';
 import authMiddleware from '../middleware/authMiddleware.js'; // Предполагаем, что у вас есть middleware
 import Favorite from '../models/Favorite.js';
 import Ad from '../models/Ad.js';
-import User from '../models/User.js';
 import Brand from '../models/Brand.js';
 import Model from '../models/Model.js';
 import Photo from '../models/Photo.js';

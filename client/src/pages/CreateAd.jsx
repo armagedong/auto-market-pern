@@ -1,334 +1,397 @@
+// client/src/pages/CreateAd.jsx
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import Tooltip from '../components/Tooltip';
+// import API from '../api/api'; // Ваш настроенный API-клиент
+
+// ⚠️ ЗАГЛУШКА: Замените это на реальный вызов к Geocoding API
+const fetchAddressSuggestions = async (query) => {
+    if (query.length < 3) return [];
+
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    const mockResults = [
+        { id: 1, address: 'Москва, ул. Тверская, 10' },
+        { id: 2, address: 'Москва, ул. Ленина, 5А' },
+        { id: 3, address: 'Московская область, г. Видное, Лесной пер., 3' },
+    ];
+
+    return mockResults.filter(item => item.address.toLowerCase().includes(query.toLowerCase()));
+};
+
+// ⚙️ СПРАВОЧНИК ОПЦИЙ АВТОМОБИЛЯ
+const commonOptions = [
+    { label: 'Кондиционер', value: 'ac' },
+    { label: 'Подогрев сидений', value: 'heated_seats' },
+    { label: 'Камера заднего вида', value: 'camera' },
+    { label: 'Парктроники', value: 'parking_sensors' },
+    { label: 'Круиз-контроль', value: 'cruise_control' },
+    { label: 'ABS/ESP', value: 'safety_system' },
+];
+
 
 export default function CreateAd({ user }) {
     const navigate = useNavigate();
-    const [brands, setBrands] = useState([]);
-    const [models, setModels] = useState([]);
-    const [colors, setColors] = useState([]); // <-- Теперь цвета загружаются
-    const [selectedBrandId, setSelectedBrandId] = useState('');
-
-    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
-        defaultValues: {
-            title: '',
-            brandId: '',
-            modelId: '',
-            colorId: '', // Используем colorId
-            year: new Date().getFullYear(),
-            mileage: 0,
-            price: 0,
-            fuel: 'Бензин',
-            gearbox: 'Автомат',
-            vin: '',
-            state: 'good',
-            ptsNumber: '',
-            ptsSeries: '',
-            ptsOwners: 1,
-            registered: 'false',
-            description: '',
-            address: '',
-            contact: '',
-            options: [],
-            photos: [],
-        }
+    const [formData, setFormData] = useState({
+        title: '',
+        year: '',
+        price: '',
+        mileage: '',
+        fuel: 'petrol',
+        gearbox: 'manual',
+        vin: '',
+        state: 'good',
+        ptsNumber: '',      // ⭐️ НОВОЕ ПОЛЕ
+        ptsSeries: '',      // ⭐️ НОВОЕ ПОЛЕ
+        ptsOwners: 1,
+        registered: true,   // ⭐️ НОВОЕ ПОЛЕ: На учете
+        description: '',
+        address: '',
+        contact: '',        // ⭐️ НОВОЕ ПОЛЕ: Контактный телефон
+        options: [],        // ⭐️ НОВОЕ ПОЛЕ: Дополнительные опции (массив)
     });
+    const [files, setFiles] = useState([]);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [formError, setFormError] = useState(null);
 
-    const photosWatch = watch('photos');
-
+    // Debounce для автодополнения адреса
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!user && !token) {
-            alert('Вы должны войти в систему');
-            navigate('/login');
+        if (formData.address.length < 3) {
+            setSuggestions([]);
+            return;
         }
+        const delayDebounceFn = setTimeout(async () => {
+            try {
+                const results = await fetchAddressSuggestions(formData.address);
+                setSuggestions(results);
+                setShowSuggestions(true);
+            } catch (error) {
+                console.error("Ошибка автодополнения адреса:", error);
+                setSuggestions([]);
+            }
+        }, 300);
+        return () => clearTimeout(delayDebounceFn);
+    }, [formData.address]);
 
-        fetchBrands();
-        fetchColors(); // <-- Вызываем загрузку цветов
-    }, [user, navigate]);
 
-    /**
-     * @summary Загружает список брендов.
-     */
-    const fetchBrands = async () => {
-        try {
-            const res = await axios.get('http://localhost:4000/api/brands');
-            setBrands(res.data);
-        } catch (err) {
-            console.error('Ошибка загрузки брендов:', err);
+    // Обработчик изменения полей ввода
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+        if (name === 'address') {
+            setShowSuggestions(true);
         }
+        setFormError(null);
     };
 
-    /**
-     * @summary Загружает список цветов.
-     */
-    const fetchColors = async () => {
-        try {
-            // Предполагаем, что у вас есть роут /api/colors, который возвращает все цвета
-            const res = await axios.get('http://localhost:4000/api/colors');
-            setColors(res.data);
-        } catch (err) {
-            console.error('Ошибка загрузки цветов:', err);
-        }
+    // Обработчик изменения опций (чекбоксы)
+    const handleOptionChange = (e) => {
+        const { value, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            options: checked
+                ? [...prev.options, value]
+                : prev.options.filter(option => option !== value)
+        }));
     };
 
-    /**
-     * @summary Загружает список моделей для выбранного бренда.
-     */
-    const fetchModels = async (brandId) => {
-        try {
-            const res = await axios.get(`http://localhost:4000/api/models?brand_id=${brandId}`);
-            setModels(res.data);
-        } catch (err) {
-            console.error('Ошибка загрузки моделей:', err);
-        }
+    // Обработчик выбора адреса из списка
+    const handleSelectAddress = (selectedAddress) => {
+        setFormData(prev => ({ ...prev, address: selectedAddress }));
+        setSuggestions([]);
+        setShowSuggestions(false);
     };
 
-    const handleBrandChange = (e) => {
-        const brandId = e.target.value;
-        setSelectedBrandId(brandId);
-        setValue('brandId', brandId);
-        setValue('modelId', '');
-        setModels([]);
-        if (brandId) {
-            fetchModels(brandId);
-        }
+    // Обработчик загрузки файлов
+    const handleFileChange = (e) => {
+        const selectedFiles = Array.from(e.target.files);
+        const newFiles = selectedFiles.slice(0, 10 - files.length);
+        setFiles(prev => [...prev, ...newFiles]);
+        e.target.value = null;
     };
 
-    const onSubmit = async (data) => {
+    // Обработчик удаления файла
+    const handleRemoveFile = (index) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Обработчик отправки формы
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setFormError(null);
+
+        // Подготовка данных для отправки
+        const data = new FormData();
+        Object.keys(formData).forEach(key => {
+            // Конвертируем массив опций в JSON строку для поля 'options'
+            const value = key === 'options' ? JSON.stringify(formData[key]) : formData[key];
+            data.append(key, value);
+        });
+        files.forEach(file => {
+            data.append('photos', file);
+        });
+
+        console.log("FormData to be sent:", Object.fromEntries(data.entries())); // DEBUG
+
         try {
-            const formData = new FormData();
-
-            Object.keys(data).forEach((key) => {
-                if (key === 'photos' && data.photos.length > 0) {
-                    Array.from(data.photos).forEach((file) => formData.append('photos', file));
-                } else if (key === 'options' && data.options.length > 0) {
-                    data.options.forEach((opt) => formData.append('options', opt));
-                } else if (key !== 'photos' && key !== 'options') {
-                    formData.append(key, data[key]);
-                }
-            });
-
-            const token = localStorage.getItem('token');
-
-            await axios.post('http://localhost:4000/api/ads', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            alert('Объявление создано и отправлено на модерацию!');
+            // ⚠️ Раскомментируйте, когда настроите API
+            // await API.post('/ads', data, {
+            //     headers: { 'Content-Type': 'multipart/form-data' },
+            // });
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Имитация запроса
+            alert('Объявление успешно создано и отправлено на модерацию!');
             navigate('/');
-        } catch (err) {
-            console.error(err);
-            const errorMsg = err.response?.data?.error || 'Неизвестная ошибка';
-            alert(`Ошибка при создании объявления: ${errorMsg}`);
+        } catch (error) {
+            const errorMessage = "Ошибка: проверьте консоль или сетевые запросы."; // error.response?.data?.error || 'Произошла ошибка при создании объявления.';
+            setFormError(errorMessage);
+            console.error("Submission error:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="p-10 max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6 text-white">Создать объявление</h1>
-            <form className="bg-gray-800 p-8 rounded-xl" onSubmit={handleSubmit(onSubmit)}>
+        <div className="max-w-xl mx-auto p-6 bg-gray-800 rounded-xl shadow-2xl mt-10 mb-20">
+            <h1 className="text-3xl font-extrabold text-white mb-8 border-b-2 border-blue-600 pb-2">
+                Разместить объявление
+            </h1>
 
-                <h2 className="text-xl font-semibold text-white mb-4">Основные данные</h2>
+            {formError && (
+                <div className="bg-red-900/50 border border-red-700 text-red-300 p-3 rounded-lg mb-4">
+                    {formError}
+                </div>
+            )}
 
-                <div className="mb-4">
-                    <input
-                        type="text"
-                        {...register("title", { required: "Заголовок обязателен" })}
-                        placeholder="Название объявления (например: Hyundai Solaris, 2020)"
-                        className="w-full p-3 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500"
-                    />
-                    {errors.title && <p className="text-red-400 text-sm mt-1">{errors.title.message}</p>}
+            <form onSubmit={handleSubmit}>
+
+                {/* 1. Блок: Заголовок, Цена, Пробег, Год */}
+                <div className="mb-6">
+                    <Tooltip content="Краткое и привлекательное описание вашего объявления.">
+                        <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">Заголовок объявления</label>
+                    </Tooltip>
+                    <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 font-inter" placeholder="Введите заголовок" required />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    {/* Бренды */}
-                    <select
-                        {...register("brandId", { required: "Выберите бренд" })}
-                        onChange={handleBrandChange}
-                        className="p-3 rounded bg-gray-700 text-white"
-                    >
-                        <option value="">Выберите бренд</option>
-                        {brands.length > 0 ? brands.map((b) => (
-                            <option key={b.id} value={b.id}>{b.name}</option>
-                        )) : <option value="">Нет брендов (база пуста)</option>}
-                    </select>
-                    {errors.brandId && <p className="text-red-400 text-sm">{errors.brandId.message}</p>}
-
-                    {/* Модели */}
-                    <select
-                        {...register("modelId", { required: "Выберите модель" })}
-                        className="p-3 rounded bg-gray-700 text-white"
-                        disabled={!selectedBrandId}
-                    >
-                        <option value="">Выберите модель</option>
-                        {models.map((m) => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                        ))}
-                    </select>
-                    {errors.modelId && <p className="text-red-400 text-sm">{errors.modelId.message}</p>}
-
-                    {/* Цвета (Динамическая загрузка) */}
-                    <select
-                        {...register("colorId", { required: "Выберите цвет" })}
-                        className="p-3 rounded bg-gray-700 text-white"
-                    >
-                        <option value="">Выберите цвет</option>
-                        {colors.length > 0 ? colors.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option> // <-- Используем реальные ID из БД
-                        )) : <option value="">Нет цветов (запустите seed.js)</option>}
-                    </select>
-                    {errors.colorId && <p className="text-red-400 text-sm">{errors.colorId.message}</p>}
-
-                    {/* VIN */}
-                    <input
-                        type="text"
-                        {...register("vin", {
-                            required: "VIN обязателен",
-                            pattern: {
-                                value: /^[A-HJ-NPR-Z0-9]{17}$/i,
-                                message: "Неверный формат VIN (17 символов)"
-                            }
-                        })}
-                        placeholder="VIN номер (17 символов)"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
-                    {errors.vin && <p className="text-red-400 text-sm">{errors.vin.message}</p>}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label htmlFor="price" className="block text-sm font-medium text-gray-300 mb-1">Цена (₽)</label>
+                        <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} required className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="0" min="1"/>
+                    </div>
+                    <div>
+                        <label htmlFor="mileage" className="block text-sm font-medium text-gray-300 mb-1">Пробег (км)</label>
+                        <input type="number" id="mileage" name="mileage" value={formData.mileage} onChange={handleChange} required className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="0" min="0"/>
+                    </div>
+                    <div>
+                        <label htmlFor="year" className="block text-sm font-medium text-gray-300 mb-1">Год</label>
+                        <input type="number" id="year" name="year" value={formData.year} onChange={handleChange} required className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="2020" min="1900" max={new Date().getFullYear() + 1}/>
+                    </div>
                 </div>
 
-                <h2 className="text-xl font-semibold text-white mb-4">Документы и владение</h2>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input
-                        type="text"
-                        {...register("ptsNumber", { required: "Номер ПТС обязателен" })}
-                        placeholder="ПТС номер"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
+                {/* 2. Блок: Топливо, КПП, VIN */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label htmlFor="fuel" className="block text-sm font-medium text-gray-300 mb-1">Топливо</label>
+                        <select id="fuel" name="fuel" value={formData.fuel} onChange={handleChange} className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500">
+                            <option value="petrol">Бензин</option>
+                            <option value="diesel">Дизель</option>
+                            <option value="electric">Электро</option>
+                            <option value="hybrid">Гибрид</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="gearbox" className="block text-sm font-medium text-gray-300 mb-1">КПП</label>
+                        <select id="gearbox" name="gearbox" value={formData.gearbox} onChange={handleChange} className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500">
+                            <option value="manual">Механика</option>
+                            <option value="automatic">Автомат</option>
+                            <option value="robot">Робот</option>
+                            <option value="cvt">Вариатор</option>
+                        </select>
+                    </div>
+                    <div>
+                        <Tooltip content="Идентификационный номер автомобиля (17 символов).">
+                            <label htmlFor="vin" className="block text-sm font-medium text-gray-300 mb-1">VIN</label>
+                        </Tooltip>
+                        <input type="text" id="vin" name="vin" value={formData.vin} onChange={handleChange} maxLength="17" className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="WBA..." required/>
+                    </div>
+                </div>
 
-                    <input
-                        type="text"
-                        {...register("ptsSeries")}
-                        placeholder="ПТС серия (необязательно)"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
+                {/* 3. Блок: ПТС (Серия, Номер, Владельцы, На учете) */}
+                <div className="mb-6 p-4 border border-gray-700 rounded-lg bg-gray-900/50">
+                    <h3 className="text-lg font-bold text-white mb-3">Данные ПТС</h3>
+                    <div className="grid grid-cols-4 gap-4">
+                        <div>
+                            <Tooltip content="Серия паспорта транспортного средства (4 символа).">
+                                <label htmlFor="ptsSeries" className="block text-sm font-medium text-gray-300 mb-1">Серия</label>
+                            </Tooltip>
+                            <input type="text" id="ptsSeries" name="ptsSeries" value={formData.ptsSeries} onChange={handleChange} maxLength="4" className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="XXYY"/>
+                        </div>
+                        <div className="col-span-2">
+                            <Tooltip content="Номер паспорта транспортного средства (10 символов).">
+                                <label htmlFor="ptsNumber" className="block text-sm font-medium text-gray-300 mb-1">Номер</label>
+                            </Tooltip>
+                            <input type="text" id="ptsNumber" name="ptsNumber" value={formData.ptsNumber} onChange={handleChange} maxLength="10" className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="1234567890"/>
+                        </div>
+                        <div>
+                            <Tooltip content="Число владельцев по ПТС.">
+                                <label htmlFor="ptsOwners" className="block text-sm font-medium text-gray-300 mb-1">Владельцев</label>
+                            </Tooltip>
+                            <input type="number" id="ptsOwners" name="ptsOwners" value={formData.ptsOwners} onChange={handleChange} min="1" max="10" className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"/>
+                        </div>
+                    </div>
 
-                    <input
-                        type="number"
-                        {...register("ptsOwners", { required: "Кол-во владельцев обязательно", min: 1 })}
-                        placeholder="Владельцев по ПТС"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
-
-                    <div className="col-span-2">
-                        <label className="inline-flex items-center text-white">
+                    <div className="mt-4">
+                        <label className="inline-flex items-center text-gray-200 cursor-pointer">
                             <input
                                 type="checkbox"
-                                {...register("registered")}
-                                value="true"
+                                name="registered"
+                                checked={formData.registered}
+                                onChange={handleChange}
                                 className="mr-2"
                             />
-                            Автомобиль состоит на учете (с гос. номером)
+                            Автомобиль на учете в ГИБДД
                         </label>
                     </div>
                 </div>
 
-                <h2 className="text-xl font-semibold text-white mb-4">Эксплуатация</h2>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input
-                        type="number"
-                        {...register("mileage", { required: "Пробег обязателен", min: 0 })}
-                        placeholder="Пробег км"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
-
-                    <select
-                        {...register("state", { required: true })}
-                        className="p-3 rounded bg-gray-700 text-white"
-                    >
-                        <option value="good">Не битый</option>
-                        <option value="bad">Битый</option>
-                    </select>
-
-                    <input
-                        type="number"
-                        {...register("price", { required: "Цена обязательна", min: 1000 })}
-                        placeholder="Цена ₽"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
-
-                    <input
-                        type="number"
-                        {...register("year", { required: "Год обязателен", min: 1900, max: new Date().getFullYear() + 1 })}
-                        placeholder="Год выпуска"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
-                </div>
-
-                <div className="mb-4">
-                    <label className="block text-white mb-2">Дополнительные опции</label>
-                    {['ЭУР', 'Климат-контроль', 'Подогрев', 'Кожаный салон', 'Навигация'].map((opt) => (
-                        <label key={opt} className="inline-flex items-center mr-4 text-white">
-                            <input
-                                type="checkbox"
-                                {...register("options")}
-                                value={opt}
-                                className="mr-1"
-                            />
-                            {opt}
+                {/* 4. Блок Состояние (Радиокнопки) */}
+                <div className="mb-6">
+                    <Tooltip content="Техническое состояние автомобиля (для фильтров).">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Состояние</label>
+                    </Tooltip>
+                    <div className="flex space-x-6">
+                        <label className="inline-flex items-center text-gray-200 cursor-pointer">
+                            <input type="radio" name="state" value="good" checked={formData.state === 'good'} onChange={handleChange} />
+                            Отличное / Не битый
                         </label>
-                    ))}
+                        <label className="inline-flex items-center text-gray-200 cursor-pointer">
+                            <input type="radio" name="state" value="damaged" checked={formData.state === 'damaged'} onChange={handleChange} />
+                            Требует ремонта / Битый
+                        </label>
+                    </div>
                 </div>
 
-                <div className="mb-4">
-                    <label className="block text-white mb-2">Фотографии (до 10)</label>
-                    <input
-                        type="file"
-                        {...register("photos", {
-                            validate: {
-                                maxFiles: files => files.length <= 10 || "Максимум 10 файлов"
-                            }
-                        })}
-                        multiple
-                        accept="image/*"
-                        className="text-white"
-                    />
-                    <p className="text-gray-400 text-sm mt-1">
-                        Выбрано файлов: {photosWatch ? photosWatch.length : 0}
-                    </p>
+                {/* 5. Блок Опции (Чекбоксы) */}
+                <div className="mb-6">
+                    <Tooltip content="Выберите основные дополнительные опции, установленные в автомобиле.">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Опции и комфорт</label>
+                    </Tooltip>
+                    <div className="grid grid-cols-2 gap-3">
+                        {commonOptions.map((option) => (
+                            <label key={option.value} className="inline-flex items-center text-gray-200 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="options"
+                                    value={option.value}
+                                    checked={formData.options.includes(option.value)}
+                                    onChange={handleOptionChange}
+                                />
+                                {option.label}
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
-                <h2 className="text-xl font-semibold text-white mb-4">Описание и контакты</h2>
-                <div className="mb-4">
-                    <label className="block text-white mb-2">Описание</label>
-                    <textarea
-                        {...register("description", { required: "Описание обязательно" })}
-                        rows="4"
-                        className="w-full p-3 rounded bg-gray-700 text-white"
-                    ></textarea>
+                {/* 6. Блок Описание */}
+                <div className="mb-6">
+                    <Tooltip content="Подробно опишите преимущества, историю обслуживания и любые особенности вашего автомобиля.">
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">Описание</label>
+                    </Tooltip>
+                    <textarea id="description" name="description" value={formData.description} onChange={handleChange} rows="4" className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 font-inter resize-none" placeholder="Опишите ваш автомобиль" required />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                {/* 7. Блок Адрес и Контакт (с автодополнением) */}
+                <div className="mb-6 relative">
+                    <Tooltip content="Начните вводить адрес (город, улицу), чтобы получить точные предложения для отображения на карте.">
+                        <label htmlFor="address" className="block text-sm font-medium text-gray-300 mb-1">Адрес осмотра</label>
+                    </Tooltip>
                     <input
                         type="text"
-                        {...register("address", { required: "Адрес обязателен" })}
-                        placeholder="Адрес осмотра"
-                        className="p-3 rounded bg-gray-700 text-white"
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        onFocus={() => { if (formData.address.length >= 3) setShowSuggestions(true); }}
+                        onBlur={() => { setTimeout(() => setShowSuggestions(false), 200); }}
+                        className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 font-inter"
+                        placeholder="Введите город, улицу и дом"
+                        required
                     />
 
-                    <input
-                        type="text"
-                        {...register("contact", { required: "Контактный телефон/имя обязательно" })}
-                        placeholder="Контакт"
-                        className="p-3 rounded bg-gray-700 text-white"
-                    />
+                    {/* Выпадающий список предложений */}
+                    {showSuggestions && suggestions.length > 0 && (
+                        <ul className="absolute z-30 w-full bg-gray-700 border border-blue-600 rounded-b-lg mt-0 max-h-60 overflow-y-auto shadow-2xl">
+                            {suggestions.map((item) => (
+                                <li
+                                    key={item.id}
+                                    onMouseDown={() => handleSelectAddress(item.address)}
+                                    className="p-3 text-gray-200 hover:bg-blue-600 hover:text-white cursor-pointer transition duration-150 font-inter border-b border-gray-600 last:border-b-0"
+                                >
+                                    {item.address}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
 
-                <button type="submit" className="w-full p-3 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold">
-                    Создать объявление
+                <div className="mb-6">
+                    <Tooltip content="Ваш номер телефона для связи с потенциальными покупателями.">
+                        <label htmlFor="contact" className="block text-sm font-medium text-gray-300 mb-1">Контактный телефон</label>
+                    </Tooltip>
+                    <input type="tel" id="contact" name="contact" value={formData.contact} onChange={handleChange} maxLength="18" className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="+7 (XXX) XXX-XX-XX" required/>
+                </div>
+
+                {/* 8. Блок Загрузка Фото (Кастомный дизайн) */}
+                <div className="mb-6">
+                    {/* ... (логика загрузки фото остается без изменений) ... */}
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Фотографии автомобиля ({files.length} / 10 шт.)
+                    </label>
+
+                    <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer bg-gray-700 hover:bg-gray-700/70 transition duration-200 p-4" >
+                        <svg className="w-8 h-8 text-blue-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p className="text-sm text-gray-400">
+                            <span className="font-semibold text-blue-400 hover:text-blue-300 transition">Нажмите, чтобы загрузить</span>
+                            &nbsp;или перетащите файлы сюда
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">JPEG, PNG (макс. 10 шт.)</p>
+                    </label>
+
+                    <input id="file-upload" type="file" name="photos" onChange={handleFileChange} className="hidden" multiple accept="image/jpeg, image/png" disabled={files.length >= 10}/>
+                </div>
+
+                {/* 9. Предварительный просмотр загруженных файлов */}
+                {files.length > 0 && (
+                    <div className="mb-6 border-t border-gray-700 pt-4">
+                        <p className="text-sm font-medium text-gray-400 mb-3">Предварительный просмотр:</p>
+                        <div className="flex flex-wrap gap-3">
+                            {files.map((file, index) => (
+                                <div key={index} className="relative h-20 w-20 rounded-lg overflow-hidden border border-gray-600 shadow-md">
+                                    <img src={URL.createObjectURL(file)} alt={`Фото ${index + 1}`} className="h-full w-full object-cover"/>
+                                    <button type="button" onClick={() => handleRemoveFile(index)} className="absolute top-0 right-0 p-1 bg-red-600/80 hover:bg-red-700 text-white rounded-bl-lg transition" title="Удалить фото">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 10. Кнопка отправки */}
+                <button
+                    type="submit"
+                    className="w-full p-3 mt-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-bold transition duration-200 disabled:bg-gray-500"
+                    disabled={loading || files.length === 0}
+                >
+                    {loading ? 'Публикация...' : 'Опубликовать объявление'}
                 </button>
             </form>
         </div>
