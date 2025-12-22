@@ -5,6 +5,7 @@ import Photo from './Photo.js';
 import Brand from './Brand.js';
 import Model from './Model.js';
 import Color from './Color.js';
+import Generation from './Generation.js';
 
 /**
  * @summary Модель объявления.
@@ -14,6 +15,10 @@ const Ad = sequelize.define('Ad', {
     title: { type: DataTypes.STRING, allowNull: false },
     year: DataTypes.INTEGER,
     price: DataTypes.FLOAT,
+    brandId: { type: DataTypes.INTEGER, allowNull: false, references: { model: Brand, key: 'id' }},
+    modelId: { type: DataTypes.INTEGER, allowNull: false, references: { model: Model, key: 'id' }},
+    generationId: { type: DataTypes.INTEGER, allowNull: true, references: { model: Generation, key: 'id' }},
+    colorId: { type: DataTypes.INTEGER, allowNull: false, references: { model: Color, key: 'id' }},
     mileage: DataTypes.INTEGER,
     fuel: DataTypes.STRING,
     gearbox: DataTypes.STRING,
@@ -33,6 +38,7 @@ const Ad = sequelize.define('Ad', {
 // Настройка связей с явными алиасами
 Ad.belongsTo(User, { foreignKey: 'userId' });
 Ad.belongsTo(Brand, { foreignKey: 'brandId' });
+Ad.belongsTo(Generation, { foreignKey: 'generationId' });
 Ad.belongsTo(Model, { foreignKey: 'modelId' });
 Ad.belongsTo(Color, { foreignKey: 'colorId' });
 

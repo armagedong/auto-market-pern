@@ -1,104 +1,108 @@
-// client/src/components/AdCard.jsx
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import API from '../api/api';
 
-const BASE_URL = 'http://localhost:4000/';
+export default function AdCard({ ad }) {
+    const [isFavorite, setIsFavorite] = useState(ad.isFavorite || false);
 
-/**
- * @param {object} ad - Объект объявления
- * @param {object} user - Текущий авторизованный пользователь (или null)
- * @param {function} onToggleFavorite - Функция для изменения статуса избранного
- * @param {boolean} isFavorite - Флаг, указывающий, добавлено ли объявление в избранное
- */
-const AdCard = ({ ad, user, onToggleFavorite, isFavorite }) => {
-    if (!ad) return null;
+    const toggleFavorite = async (e) => {
+        if (e) e.preventDefault(); // Защита от перезагрузки
 
-    const getPhotoUrl = (photoObj) => {
-        if (!photoObj || !photoObj.url) return null;
-        // Используем replace для исправления пути, если необходимо (например, для обратных слешей Windows)
-        return `${BASE_URL}${photoObj.url.replace(/\\/g, '/')}`;
-    };
+        // 1. Берем токен ПРЯМО СЕЙЧАС из хранилища
+        const token = localStorage.getItem('token');
 
-    const mainPhotoUrl = ad.Photos && ad.Photos.length > 0 ? getPhotoUrl(ad.Photos[0]) : null;
-    const brandName = ad.Brand?.name || 'Неизвестно';
-    const modelName = ad.Model?.name || 'Неизвестно';
-
-    const handleFavoriteClick = async (e) => {
-        e.preventDefault(); // Предотвращаем переход по ссылке
-        e.stopPropagation(); // Предотвращаем срабатывание Link
-
-        if (!user) {
-            alert('Для добавления в избранное необходимо войти.');
-            return;
+        if (!token) {
+            return alert("Брат, ты не вошел в аккаунт!");
         }
 
-        if (onToggleFavorite) {
-            await onToggleFavorite(ad.id);
+        // 2. Формируем конфиг с заголовком вручную
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        };
+
+        try {
+            if (isFavorite) {
+                // УДАЛЯЕМ (передаем ID в URL)
+                await API.delete(`/favorites/${ad.id}`, config);
+            } else {
+                // ДОБАВЛЯЕМ (передаем объект в body, а config третьим параметром)
+                await API.post(`/favorites/${ad.id}`, config);
+            }
+
+            // 3. Если запрос прошел — меняем сердечко
+            setIsFavorite(!isFavorite);
+
+        } catch (err) {
+            console.error("Ошибка запроса:", err.response?.data);
+            alert(err.response?.data?.message || "Ошибка при связи с сервером");
         }
     };
+
+    // Исправленный путь к фото
+    const photoUrl = ad.Photos && ad.Photos.length > 0
+        ? `http://localhost:4000${ad.Photos[0].url.startsWith('/') ? '' : '/'}${ad.Photos[0].url}`
+        : 'https://via.placeholder.com/600x400?text=Нет+фото';
 
     return (
-        <div className="relative">
-            {/* Кнопка избранного */}
-            <button
-                onClick={handleFavoriteClick}
-                className="absolute top-3 right-3 p-2 rounded-full bg-gray-900/60 hover:bg-gray-900/80 transition z-10 focus:outline-none focus:ring-2 focus:ring-red-500"
-                title={isFavorite ? "Удалить из избранного" : "Добавить в избранное"}
-            >
-                {/* Иконка сердца */}
-                <svg className={`w-6 h-6 transition ${isFavorite ? 'text-red-500 fill-red-500' : 'text-white fill-transparent stroke-white'}`}
-                     viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="1.5">
-                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"></path>
-                </svg>
-            </button>
+        <Link to={`/ad/${ad.id}`} className="group flex flex-col bg-[#1a1d26] rounded-[2rem] overflow-hidden border border-gray-800 transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] hover:-translate-y-2 h-[480px]">
+            {/* ФОТО С ФИКСИРОВАННОЙ ВЫСОТОЙ */}
+            <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gray-900">
+                <img
+                    src={photoUrl}
+                    alt={ad.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
 
-            {/* Весь остальной контент обернут в Link для кликабельности */}
-            <Link to={`/ad/${ad.id}`}>
-                <div className="bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 h-full flex flex-col">
+                {/* Кнопка Избранное */}
+                <button
+                    onClick={toggleFavorite}
+                    className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all"
+                >
+                    <span className="text-xl">{isFavorite ? '❤️' : '🤍'}</span>
+                </button>
 
-                    {/* 1. Блок изображения */}
-                    <div className="w-full h-48 bg-gray-700 flex items-center justify-center overflow-hidden">
-                        {mainPhotoUrl ? (
-                            <img
-                                src={mainPhotoUrl}
-                                alt={ad.title}
-                                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                            />
-                        ) : (
-                            <span className="text-gray-500 font-bold">Нет фото</span>
-                        )}
+                <div className="absolute bottom-4 left-4 bg-blue-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-white">
+                    {ad.year} г.
+                </div>
+            </div>
+
+            {/* КОНТЕНТ */}
+            <div className="p-6 flex flex-col flex-grow">
+                <div className="flex justify-between items-start mb-1">
+                    <h3 className="text-xl font-black text-white line-clamp-1 group-hover:text-blue-500 transition-colors">
+                        {ad.Brand?.name} {ad.Model?.name}
+                    </h3>
+                </div>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-tighter mb-4">
+                    {ad.Generation?.name || 'Стандарт'}
+                </p>
+
+                <div className="text-3xl font-black text-white mb-auto">
+                    {ad.price?.toLocaleString('ru-RU')} <span className="text-blue-500 text-lg">₽</span>
+                </div>
+
+                {/* Параметры */}
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                    <div className="bg-gray-800/50 rounded-2xl p-3 border border-gray-700/30">
+                        <span className="block text-[9px] text-gray-500 uppercase font-black mb-1">Пробег</span>
+                        <span className="text-sm font-bold">{ad.mileage?.toLocaleString()} км</span>
                     </div>
-
-                    {/* 2. Блок контента */}
-                    <div className="p-4 flex flex-col flex-grow">
-                        {/* Цена */}
-                        <p className="font-extrabold text-2xl text-blue-400 mb-3">
-                            {ad.price.toLocaleString()} ₽
-                        </p>
-
-                        {/* Заголовок */}
-                        <h3 className="font-semibold text-xl text-white mb-2 line-clamp-2">
-                            {ad.title}
-                        </h3>
-
-                        {/* Основные характеристики */}
-                        <p className="text-gray-400 text-sm mb-3">
-                            {brandName} {modelName} &bull; {ad.year} г.
-                        </p>
-
-                        {/* Детали */}
-                        <div className="flex flex-wrap text-gray-500 text-xs mt-auto border-t border-gray-700 pt-3">
-                            <span className="mr-3">{ad.mileage.toLocaleString()} км</span>
-                            <span className="mr-3 capitalize">{ad.fuel}</span>
-                            <span className="mr-3 capitalize">{ad.gearbox}</span>
-                            <span className="mr-3">{ad.ptsOwners} владелец</span>
-                        </div>
+                    <div className="bg-gray-800/50 rounded-2xl p-3 border border-gray-700/30">
+                        <span className="block text-[9px] text-gray-500 uppercase font-black mb-1">Цвет</span>
+                        <span className="text-sm font-bold truncate">{ad.Color?.name || '—'}</span>
                     </div>
                 </div>
-            </Link>
-        </div>
-    );
-};
 
-export default AdCard;
+                {/* Город и Дата */}
+                <div className="mt-5 pt-4 border-t border-gray-800 flex justify-between items-center text-gray-500 text-[11px] font-medium">
+                    <div className="flex items-center gap-1">
+                        <span className="truncate max-w-[120px]">{ad.city || ad.address || 'Москва'}</span>
+                    </div>
+                    <span>{new Date(ad.createdAt).toLocaleDateString()}</span>
+                </div>
+            </div>
+        </Link>
+    );
+}

@@ -1,5 +1,7 @@
 // client/src/pages/Profile.jsx
+
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import AdCard from '../components/AdCard';
 import API from '../api/api'; // Клиент API
 import { useNavigate } from 'react-router-dom';
@@ -75,11 +77,7 @@ export default function Profile({ user }) {
                 )}
             </section>
 
-            {/* Секция для ваших объявлений (можно добавить позже) */}
-            {/* <section>
-                <h2 className="text-3xl font-bold text-white mb-6">Ваши объявления</h2>
-                ...
-            </section> */}
+
         </div>
     );
 }

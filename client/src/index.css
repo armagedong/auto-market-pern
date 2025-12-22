@@ -13,6 +13,9 @@ body {
     @apply bg-gray-900 text-gray-100;
     min-height: 100vh;
 }
+::-webkit-scrollbar {
+    display: none;
+}
 
 /* Применяем агрессивный шрифт Montserrat к заголовкам и жирным элементам */
 h1, h2, h3, h4, .font-extrabold, .font-bold {

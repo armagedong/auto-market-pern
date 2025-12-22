@@ -2,7 +2,6 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import auth from '../middleware/authMiddleware.js';
-// Импортируем наш Фасад
 import AdService from '../services/AdService.js';
 import Ad from '../models/Ad.js';
 import User from '../models/User.js';
@@ -10,6 +9,7 @@ import Photo from '../models/Photo.js';
 import Brand from '../models/Brand.js';
 import Model from '../models/Model.js';
 import Color from '../models/Color.js';
+import {getAdById, getAds} from "../controllers/adController.js";
 
 const router = express.Router();
 
@@ -86,5 +86,8 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: 'Ошибка сервера при получении объявления' });
     }
 });
+
+router.get('/', getAds);
+router.get('/:id', getAdById);
 
 export default router;

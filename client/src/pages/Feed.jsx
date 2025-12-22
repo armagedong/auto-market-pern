@@ -1,89 +1,105 @@
-// client/src/pages/Feed.jsx (Полный код)
-
 import React, { useState, useEffect } from 'react';
+import API from '../api/api';
+import FilterPanel from '../components/FilterPanel';
 import AdCard from '../components/AdCard';
-import API from '../api/api'; // Используем наш настроенный API-клиент
 
-// Принимаем пользователя в качестве props
-export default function Feed({ user }) {
+export default function Feed() {
     const [ads, setAds] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchAds();
-    }, [user]); // Перезагружаем объявления, если меняется статус пользователя (чтобы обновить избранное)
+    // ПОЛНЫЙ список фильтров, ничего не забыто
+    const [filters, setFilters] = useState({
+        brandId: '',
+        modelId: '',
+        generationId: '',
+        colorId: '',
+        state: '',
+        priceFrom: '',
+        priceTo: '',
+        yearFrom: '',
+        yearTo: '',
+        mileageFrom: '',
+        mileageTo: '',
+        search: '',
+        sort: 'newest' // По умолчанию: новые
+    });
 
     const fetchAds = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            // Если пользователь залогинен, отправляем токен, чтобы бэкенд мог отметить избранные объявления
-            const res = await API.get('/ads');
+            // Убираем пустые поля перед отправкой
+            const params = {};
+            Object.keys(filters).forEach(key => {
+                if (filters[key] !== '') params[key] = filters[key];
+            });
 
-            // Предполагаем, что бэкенд возвращает isFavorite для каждого объявления, если токен есть
-            setAds(res.data);
-        } catch (err) {
-            console.error('Ошибка загрузки объявлений:', err);
-            setError('Не удалось загрузить объявления.');
+            const response = await API.get('/ads', { params });
+            setAds(response.data);
+        } catch (error) {
+            console.error("Ошибка загрузки объявлений:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    // Функция для добавления/удаления из избранного
-    const handleToggleFavorite = async (adId) => {
-        if (!user) {
-            // Эта проверка должна быть избыточна, но оставим ее как запасную
-            alert('Для добавления в избранное необходимо войти.');
-            return;
-        }
-
-        try {
-            const res = await API.post(`/favorites/${adId}`);
-
-            // Обновляем локальное состояние, чтобы сердечко сразу поменяло цвет
-            setAds(prevAds => prevAds.map(ad =>
-                ad.id === adId ? { ...ad, isFavorite: res.data.status === 'added' } : ad
-            ));
-
-        } catch (error) {
-            console.error('Ошибка избранного:', error);
-            alert(`Ошибка при работе с избранным: ${error.response?.data?.error || 'Неизвестная ошибка'}`);
-        }
-    };
-
-
-    if (loading) {
-        return <div className="text-center py-20 text-gray-400">Загрузка объявлений...</div>;
-    }
-
-    if (error) {
-        return <div className="text-center py-20 text-red-500">{error}</div>;
-    }
+    // Загрузка при первом входе и при смене сортировки (автоматически)
+    useEffect(() => {
+        fetchAds();
+    }, [filters.sort]);
 
     return (
-        <div className="max-w-7xl mx-auto p-6 md:p-10">
-            <h1 className="text-4xl font-extrabold text-white mb-8 border-b-2 border-blue-600 pb-2">
-                Свежие предложения
-            </h1>
+        <div className="min-h-screen bg-[#0f1117] text-white pt-10 pb-12">
+            <div className="max-w-[1440px] mx-auto px-4">
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-            {ads.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {ads.map((ad) => (
-                        <AdCard
-                            key={ad.id}
-                            ad={ad}
-                            user={user} // <-- Передаем объект пользователя
-                            isFavorite={ad.isFavorite} // <-- Передаем статус
-                            onToggleFavorite={handleToggleFavorite} // <-- Передаем функцию
+                    {/* ЛЕВАЯ КОЛОНКА: ФИЛЬТРЫ (STICKY) */}
+                    <aside className="w-full lg:w-[350px] sticky top-24 shrink-0">
+                        <FilterPanel
+                            filters={filters}
+                            setFilters={setFilters}
+                            onSearch={fetchAds}
                         />
-                    ))}
+                    </aside>
+
+                    {/* ПРАВАЯ КОЛОНКА: КОНТЕНТ */}
+                    <main className="flex-1">
+                        <div className="flex justify-between items-center mb-8 bg-[#1a1d26] p-6 rounded-[2rem] border border-gray-800">
+                            <div>
+                                <p className="text-gray-500 font-medium">Найдено: {ads.length} объявлений</p>
+                            </div>
+
+                            {/* Быстрый переключатель вида или доп. инфо */}
+                            <div className="hidden sm:block text-sm text-gray-400">
+                                Сортировка: <span className="text-blue-500 font-bold">{filters.sort === 'newest' ? 'По дате' : 'По цене'}</span>
+                            </div>
+                        </div>
+
+                        {loading ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {[1,2,3,4,5,6].map(i => (
+                                    <div key={i} className="h-[450px] bg-[#1a1d26] rounded-[2.5rem] animate-pulse border border-gray-800"></div>
+                                ))}
+                            </div>
+                        ) : ads.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {ads.map(ad => (
+                                    <AdCard key={ad.id} ad={ad} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-32 bg-[#1a1d26] rounded-[3rem] border border-dashed border-gray-700">
+                                <h2 className="text-2xl font-bold mt-4">Ничего не найдено</h2>
+                                <button
+                                    onClick={() => { setFilters({sort:'newest', brandId:''}); fetchAds(); }}
+                                    className="mt-6 text-blue-500 font-bold hover:underline"
+                                >
+                                    Сбросить всё
+                                </button>
+                            </div>
+                        )}
+                    </main>
                 </div>
-            ) : (
-                <div className="text-center py-20 bg-gray-800 rounded-xl shadow-lg">
-                    <p className="text-gray-400 text-lg">Объявлений пока нет.</p>
-                </div>
-            )}
+            </div>
         </div>
     );
 }

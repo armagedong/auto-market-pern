@@ -27,8 +27,6 @@ export const fetchAddressSuggestions = async (query) => {
                 fields: 'items.point',
                 page: 1,
                 page_size: 10,
-                // 🛑 ВЫЗЫВАЕТ ОШИБКУ 400. УДАЛЯЕМ ИЛИ КОММЕНТИРУЕМ:
-                // locale: 'ru',
             }
         });
 
@@ -42,7 +40,7 @@ export const fetchAddressSuggestions = async (query) => {
                 // full_name - это полный, стандартизированный адрес
                 address: item.full_name,
                 lat: item.point.lat,
-                lng: item.point.lon, // 2ГИС использует lon для долготы
+                lng: item.point.lon,
                 id: item.id,
             }));
 
