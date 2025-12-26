@@ -1,4 +1,3 @@
-// server/src/models/Favorite.js
 
 import { DataTypes } from 'sequelize';
 import sequelize from '../db.js';
@@ -6,8 +5,7 @@ import User from './User.js';
 import Ad from './Ad.js';
 
 const Favorite = sequelize.define('Favorite', {
-    // В этой таблице нам достаточно ID пользователя и ID объявления,
-    // которые будут выступать в качестве составного первичного ключа.
+
     userId: {
         type: DataTypes.INTEGER,
         primaryKey: true,

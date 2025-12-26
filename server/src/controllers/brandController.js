@@ -1,7 +1,7 @@
 import BrandService from '../services/brandService.js';
 
 class BrandController {
-    // --- БРЕНДЫ ---
+
     async getBrands(req, res) {
         try {
             const brands = await BrandService.getAllBrands();
@@ -32,7 +32,6 @@ class BrandController {
         }
     }
 
-    // --- МОДЕЛИ ---
     async getModels(req, res) {
         try {
             const models = await BrandService.getModels(req.params.id);
@@ -63,7 +62,6 @@ class BrandController {
         }
     }
 
-    // --- ПОКОЛЕНИЯ ---
     async getGenerations(req, res) {
         try {
             const generations = await BrandService.getGenerations(req.params.id);
@@ -75,7 +73,6 @@ class BrandController {
 
     async createGeneration(req, res) {
         try {
-            // Ожидаем: { name: "I (E53)", modelId: 5, yearStart: 1999, yearEnd: 2006 }
             const { name, modelId, yearStart, yearEnd } = req.body;
             if (!name || !modelId) return res.status(400).json({ message: "Неполные данные" });
 

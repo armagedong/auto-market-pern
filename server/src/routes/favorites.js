@@ -1,10 +1,8 @@
-// server/src/routes/favorites.js
 
 import { Router } from 'express';
-import authMiddleware from '../middleware/authMiddleware.js'; // Предполагаем, что у вас есть middleware
+import authMiddleware from '../middleware/authMiddleware.js';
 import Favorite from '../models/Favorite.js';
 import Ad from '../models/Ad.js';
-import User from '../models/User.js';
 import Brand from '../models/Brand.js';
 import Model from '../models/Model.js';
 import Photo from '../models/Photo.js';
@@ -12,7 +10,6 @@ import Photo from '../models/Photo.js';
 
 const router = Router();
 
-// 1. Добавить/Удалить объявление из избранного (POST /api/favorites/:adId)
 router.post('/:adId', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { adId } = req.params;
@@ -26,7 +23,6 @@ router.post('/:adId', authMiddleware, async (req, res) => {
         if (created) {
             return res.json({ message: 'Объявление добавлено в избранное', status: 'added' });
         } else {
-            // Если запись уже существовала, удаляем ее (Toggle)
             await Favorite.destroy({ where: { userId, adId } });
             return res.json({ message: 'Объявление удалено из избранного', status: 'removed' });
         }
@@ -37,7 +33,6 @@ router.post('/:adId', authMiddleware, async (req, res) => {
 });
 
 
-// 2. Получить список избранных объявлений пользователя (GET /api/favorites)
 router.get('/', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
@@ -49,7 +44,6 @@ router.get('/', authMiddleware, async (req, res) => {
                 {
                     model: Ad,
                     required: true,
-                    // Включаем все необходимые данные для AdCard
                     include: [
                         { model: Brand, as: 'Brand' },
                         { model: Model, as: 'Model' },
@@ -57,11 +51,9 @@ router.get('/', authMiddleware, async (req, res) => {
                     ],
                 },
             ],
-            // Сортируем по дате добавления в избранное
             order: [['createdAt', 'DESC']],
         });
 
-        // Форматируем результат, чтобы вернуть только массив объектов Ad
         const ads = favorites.map(fav => fav.Ad);
         res.json(ads);
     } catch (err) {

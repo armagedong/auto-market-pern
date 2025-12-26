@@ -3,7 +3,6 @@ import Model from '../models/Model.js';
 import Generation from "../models/Generation.js";
 
 class BrandService {
-    // --- БРЕНДЫ ---
     async getAllBrands() {
         return await Brand.findAll({ order: [['name', 'ASC']] });
     }
@@ -13,11 +12,9 @@ class BrandService {
     }
 
     async deleteBrand(id) {
-        // Благодаря ON DELETE CASCADE в SQL, удаление бренда удалит и модели
         return await Brand.destroy({ where: { id } });
     }
 
-    // --- МОДЕЛИ ---
     async getModels(brandId) {
         return await Model.findAll({
             where: { brandId },
@@ -33,16 +30,14 @@ class BrandService {
         return await Model.destroy({ where: { id } });
     }
 
-    // --- ПОКОЛЕНИЯ ---
     async getGenerations(modelId) {
         return await Generation.findAll({
             where: { modelId },
-            order: [['yearFrom', 'ASC']] // Сортируем по году
+            order: [['yearFrom', 'ASC']]
         });
     }
 
     async createGeneration(data) {
-        // data = { name, modelId, yearStart, yearEnd }
         return Generation.create(data);
     }
 

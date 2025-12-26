@@ -19,7 +19,6 @@ router.get('/', async (req, res) => {
             attributes: ['id', 'name', 'yearFrom', 'yearTo'],
             order: [['yearFrom', 'DESC']]
         });
-        // Вернет: [{id, name, yearStart, yearEnd}, ...]
         res.json(generations);
     } catch (err) {
         console.error(err);

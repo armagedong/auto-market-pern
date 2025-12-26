@@ -10,7 +10,6 @@ const Generation = sequelize.define('Generation', {
         allowNull: false,
         comment: 'Название поколения, например: F15, W212 или I'
     },
-    // Опциональные поля для более детальной информации:
     yearFrom: {
         type: DataTypes.INTEGER,
         allowNull: true,

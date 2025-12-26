@@ -1,8 +1,6 @@
-// client/src/api/geocoding.js
 
 import axios from 'axios';
 
-// ⚠️ ЗАМЕНИТЕ ЭТО НА ВАШ РЕАЛЬНЫЙ КЛЮЧ API 2ГИС
 const DG_API_KEY = '1c9b97fd-86fb-4861-a340-12600c03385b';
 
 // Используем endpoint для геокодирования/поиска объектов
@@ -12,7 +10,6 @@ const GEOCODING_URL = 'https://catalog.api.2gis.ru/3.0/items/geocode';
 
 /**
  * Запрашивает предложения по вводу адреса, используя 2ГИС.
- * В отличие от Google, 2ГИС может сразу вернуть координаты в результате поиска.
  * * @param {string} query - Частично введенный адрес
  * @returns {Array} Массив объектов, содержащих адрес и координаты
  */

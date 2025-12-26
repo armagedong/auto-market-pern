@@ -13,7 +13,7 @@ export const getAds = async (req, res) => {
         const { brandId, priceMin, priceMax, sort, search } = req.query;
 
         let whereConditions = {
-            status: 'approved' // Показываем только проверенные
+            status: 'approved'
         };
 
         if (brandId) whereConditions.brandId = Number(brandId);

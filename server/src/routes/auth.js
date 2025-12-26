@@ -1,5 +1,4 @@
 import { Router } from 'express';
-// Импортируем наш Фасад
 import AuthService from '../services/AuthService.js';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -13,12 +12,9 @@ const router = Router();
 router.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        // Логика вынесена в сервис
         const { token, user } = await AuthService.register(username, email, password);
-        // Возвращаем токен и пользователя
         res.json({ message: 'Успешная регистрация', token, user });
     } catch (err) {
-        // Улучшенная обработка ошибок из сервиса
         res.status(400).json({ error: err.message });
     }
 });
@@ -30,11 +26,9 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        // Логика вынесена в сервис
         const { token, user } = await AuthService.login(email, password);
         res.json({ token, user });
     } catch (err) {
-        // Улучшенная обработка ошибок из сервиса
         res.status(401).json({ error: err.message });
     }
 });

@@ -23,16 +23,16 @@ const Ad = sequelize.define('Ad', {
     fuel: DataTypes.STRING,
     gearbox: DataTypes.STRING,
     vin: DataTypes.STRING,
-    state: DataTypes.STRING, // <-- Унифицировано: техническое состояние авто (good, bad)
-    ptsNumber: DataTypes.STRING(10), // <-- Унифицировано: номер ПТС
-    ptsSeries: DataTypes.STRING(4), // <-- Добавлено: серия ПТС
-    ptsOwners: DataTypes.INTEGER, // <-- Унифицировано: число владельцев по ПТС
+    state: DataTypes.STRING,
+    ptsNumber: DataTypes.STRING(10),
+    ptsSeries: DataTypes.STRING(4),
+    ptsOwners: DataTypes.INTEGER,
     registered: DataTypes.BOOLEAN,
     description: DataTypes.TEXT,
     address: DataTypes.STRING,
     contact: DataTypes.STRING,
-    options: DataTypes.TEXT, // <-- Для хранения JSON строки доп. опций
-    status: { type: DataTypes.STRING, defaultValue: 'pending' } // pending, approved
+    options: DataTypes.TEXT,
+    status: { type: DataTypes.STRING, defaultValue: 'pending' }
 });
 
 // Настройка связей с явными алиасами
