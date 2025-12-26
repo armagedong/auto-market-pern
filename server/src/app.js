@@ -10,6 +10,8 @@ import generationRoutes from './routes/generations.js'
 import path from 'path';
 import { fileURLToPath } from 'url';
 import moderationRoutes from "./routes/moderationRoutes.js";
+import adminRouter from "./routes/adminRouter.js";
+import {checkRole} from "./middleware/checkRole.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +37,6 @@ app.use('/api/models', modelsRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/generations', generationRoutes);
 app.use('/api/moderation', moderationRoutes);
-
+app.use('/api/admin', adminRouter);
 
 export default app;

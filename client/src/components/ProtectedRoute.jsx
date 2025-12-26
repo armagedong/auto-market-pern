@@ -1,10 +1,11 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode'; // Установи: npm install jwt-decode
 
-export default function ProtectedRoute({ children, adminOnly = false }) {
+const ProtectedRoute = ({ children, adminOnly = false }) => {
     const token = localStorage.getItem('token');
 
+    // 1. Если токена нет вообще — на страницу входа
     if (!token) {
         return <Navigate to="/login" replace />;
     }
@@ -12,21 +13,24 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
     try {
         const decoded = jwtDecode(token);
 
-        // Проверяем роль (убедись, что твой бэкенд кладет 'role' в JWT токен)
-        if (adminOnly && decoded.role !== 'admin') {
-            return (
-                <div className="min-h-screen bg-[#0f1117] flex items-center justify-center text-white">
-                    <div className="text-center">
-                        <h1 className="text-6xl font-black text-red-500 mb-4">403</h1>
-                        <p className="text-xl font-bold">Доступ запрещен: недостаточно прав</p>
-                        <a href="/" className="mt-6 inline-block text-blue-500 underline">Вернуться на главную</a>
-                    </div>
-                </div>
-            );
+        // 2. Проверяем срок действия токена (exp в секундах)
+        if (decoded.exp * 1000 < Date.now()) {
+            localStorage.removeItem('token');
+            return <Navigate to="/login" replace />;
         }
 
+        // 3. Если нужен админ, а в токене роль другая — на главную
+        if (adminOnly && decoded.role !== 'admin') {
+            return <Navigate to="/" replace />;
+        }
+
+        // Если все проверки пройдены — показываем страницу
         return children;
+
     } catch (error) {
+        localStorage.removeItem('token');
         return <Navigate to="/login" replace />;
     }
-}
+};
+
+export default ProtectedRoute;

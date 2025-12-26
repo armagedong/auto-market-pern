@@ -93,7 +93,7 @@ export default function Footer({user}) {
                     </div>
                     <div className="flex gap-8">
                         <span className="hover:text-gray-400 cursor-pointer transition-colors">8 (950) 189-38-81</span>
-                        <span className="hover:text-gray-400 cursor-pointer transition-colors">support@autosite.ru</span>
+                        <span className="hover:text-gray-400 cursor-pointer transition-colors">armankanturleev6551@gmail.com</span>
                     </div>
                 </div>
             </div>

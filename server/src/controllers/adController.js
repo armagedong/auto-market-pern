@@ -13,27 +13,19 @@ export const getAds = async (req, res) => {
         const { brandId, priceMin, priceMax, sort, search } = req.query;
 
         let whereConditions = {
-            status: 'pending' // Если вы ввели модерацию, проверьте, что в БД есть статус 'approved'
+            status: 'approved' // Показываем только проверенные
         };
 
-        // Фильтр по марке
-        if (brandId && brandId !== "") {
-            whereConditions.brandId = Number(brandId);
-        }
-
-        // Фильтр по цене
+        if (brandId) whereConditions.brandId = Number(brandId);
         if (priceMin || priceMax) {
             whereConditions.price = {};
             if (priceMin) whereConditions.price[Op.gte] = Number(priceMin);
             if (priceMax) whereConditions.price[Op.lte] = Number(priceMax);
         }
-
-        // Поиск по тексту
         if (search) {
-            whereConditions.title = { [Op.iLike]: `%${search}%` }; // iLike для поиска без учета регистра (PostgreSQL)
+            whereConditions.title = { [Op.iLike]: `%${search}%` };
         }
 
-        // Логика сортировки
         let order = [['createdAt', 'DESC']];
         if (sort === 'price_asc') order = [['price', 'ASC']];
         if (sort === 'price_desc') order = [['price', 'DESC']];
@@ -42,15 +34,31 @@ export const getAds = async (req, res) => {
             where: whereConditions,
             include: [
                 { model: Brand, attributes: ['name'] },
-                { model: Model, attributes: ['name'] }
+                { model: Model, attributes: ['name'] },
+                { model: Photo, as: 'Photos' }
             ],
             order: order
         });
-
         res.json(ads);
     } catch (error) {
-        console.error("ОШИБКА НА СЕРВЕРЕ:", error); // Посмотрите в терминал сервера!
         res.status(500).json({ error: error.message });
+    }
+};
+export const getPendingAds = async (req, res) => {
+    try {
+        const ads = await Ad.findAll({
+            where: { status: 'pending' },
+            include: [
+                { model: Brand },
+                { model: Model },
+                { model: Photo, as: 'Photos' },
+                { model: User, attributes: ['username'] }
+            ],
+            order: [['createdAt', 'ASC']]
+        });
+        res.json(ads);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 };
 export const getAdById = async (req, res) => {
@@ -72,35 +80,19 @@ export const getAdById = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-export const getAllAds = async (req, res) => {
+export const updateAdStatus = async (req, res) => {
     try {
-        const userId = req.user?.id; // Если пользователь авторизован, берем его ID
+        const { id } = req.params;
+        const { status } = req.body;
 
-        const ads = await Ad.findAll({
-            include: [
-                { model: Brand },
-                { model: Model },
-                { model: Photo, as: 'Photos' },
-                // Добавляем проверку избранного через Left Join
-                {
-                    model: Favorite,
-                    where: userId ? { userId } : { id: null }, // Ищем только лайки этого юзера
-                    required: false, // Чтобы не скрывать объявления без лайков
-                }
-            ]
-        });
+        const ad = await Ad.update({ status }, { where: { id } });
 
-        // Превращаем результат в удобный формат: добавляем поле isFavorite (true/false)
-        const formattedAds = ads.map(ad => {
-            const adJson = ad.toJSON();
-            return {
-                ...adJson,
-                isFavorite: !!adJson.Favorites && adJson.Favorites.length > 0
-            };
-        });
+        if (ad[0] === 0) {
+            return res.status(404).json({ message: "Объявление не найдено" });
+        }
 
-        res.json(formattedAds);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.json({ message: "Статус успешно обновлен" });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 };
